@@ -351,6 +351,9 @@ import {
   getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
   onSnapshot, query, orderBy
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import {
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCzmcte3epgkssf7GXkE5CZYLIn45M-oYQ",
@@ -363,6 +366,7 @@ const firebaseConfig = {
 
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
+const auth = getAuth(fbApp);
 const prayersCol = collection(db, "prayers");
 
 // 아래 함수들에서 window.* 로 노출해두면 onclick="..." 에서 바로 호출할 수 있어요.
@@ -378,6 +382,8 @@ window.openEditModal = openEditModal;
 window.closeModal = closeModal;
 window.saveModal = saveModal;
 window.deletePrayer = deletePrayer;
+window.doLogin = doLogin;
+window.doLogout = doLogout;
 
 const CATS = ["가족","건강","사역","재정","관계","기타"];
 
@@ -389,11 +395,47 @@ let state = {
   playIndex: 0,
   showSeal: null, // prayer object being sealed
   modal: null, // { mode: 'edit' | 'answer', id: string|null }
+  user: null,
+  authChecked: false,
+  loginError: "",
 };
+
+let unsubscribePrayers = null;
+
+onAuthStateChanged(auth, (user) => {
+  state.user = user;
+  state.authChecked = true;
+  if(user){
+    subscribeToPrayers();
+  } else if(unsubscribePrayers){
+    unsubscribePrayers();
+    unsubscribePrayers = null;
+    state.prayers = [];
+    state.loaded = false;
+  }
+  render();
+});
+
+async function doLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-pw').value;
+  state.loginError = "";
+  try{
+    await signInWithEmailAndPassword(auth, email, pw);
+  }catch(e){
+    console.error(e);
+    state.loginError = "로그인에 실패했어요. 이메일/비밀번호를 확인해주세요.";
+    render();
+  }
+}
+
+function doLogout(){
+  signOut(auth);
+}
 
 function subscribeToPrayers(){
   const q = query(prayersCol, orderBy("createdAtSort", "desc"));
-  onSnapshot(q, (snapshot) => {
+  unsubscribePrayers = onSnapshot(q, (snapshot) => {
     state.prayers = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     state.loaded = true;
     render();
@@ -406,10 +448,21 @@ function subscribeToPrayers(){
 
 function render(){
   const root = document.getElementById('app');
+
+  if(!state.authChecked){
+    root.innerHTML = `<div class="empty" style="padding-top:120px;">불러오는 중…</div>`;
+    return;
+  }
+
+  if(!state.user){
+    root.innerHTML = renderLogin();
+    return;
+  }
+
   root.innerHTML = `
     <header class="top">
       <h1>기도의 자리</h1>
-      <span class="date">${todayLabel()}</span>
+      <span class="date">${todayLabel()} <button class="icon-btn" onclick="doLogout()" title="로그아웃" style="margin-left:6px;">로그아웃</button></span>
     </header>
     <div class="tabs">
       ${tab('home','목록')}
@@ -424,6 +477,27 @@ function render(){
     ${state.tab === 'home' ? `<button class="fab" onclick="openAddModal()">+</button>` : ''}
     ${state.showSeal ? renderSeal() : ''}
     ${state.modal ? renderModal() : ''}
+  `;
+}
+
+function renderLogin(){
+  return `
+    <div class="page" style="margin-top:80px; min-height:auto; background-image:none;">
+      <div class="modal-title" style="text-align:center;">기도의 자리</div>
+      <div class="modal-hint" style="text-align:center;">로그인하고 나의 기도 제목을 확인하세요</div>
+      <div class="field">
+        <label>이메일</label>
+        <input type="email" id="login-email" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label>비밀번호</label>
+        <input type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()">
+      </div>
+      ${state.loginError ? `<div style="color:var(--rose); font-size:12px; margin-bottom:12px;">${escapeHtml(state.loginError)}</div>` : ''}
+      <div class="btn-row" style="justify-content:center;">
+        <button class="btn btn-primary" onclick="doLogin()">로그인</button>
+      </div>
+    </div>
   `;
 }
 
@@ -708,7 +782,6 @@ function escapeHtml(str){
 }
 
 render();
-subscribeToPrayers();
 </script>
 </body>
 </html>
