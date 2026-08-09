@@ -388,6 +388,36 @@
 
   .pray-start-btn{ padding:13px 30px; font-size:15px; }
   .pray-total{ font-size:11.5px; color:var(--gold-deep); margin-top:14px; }
+
+  /* 기도 마침 - 말씀 카드 */
+  .verse-card{
+    width:min(88vw, 380px);
+    background:var(--card);
+    border-radius:16px;
+    padding:34px 26px 28px;
+    text-align:center;
+    box-shadow:0 20px 50px rgba(43,50,68,0.3);
+  }
+  .verse-mark{
+    font-family:'Noto Serif KR', serif;
+    font-size:44px;
+    color:var(--gold);
+    line-height:1;
+    margin-bottom:4px;
+  }
+  .verse-text{
+    font-family:'Noto Serif KR', serif;
+    font-size:17px;
+    line-height:1.75;
+    color:var(--ink);
+    margin:0 0 14px;
+  }
+  .verse-ref{
+    font-size:12px;
+    color:var(--gold-deep);
+    font-weight:700;
+    letter-spacing:0.5px;
+  }
 </style>
 </head>
 <body>
@@ -435,6 +465,7 @@ window.doLogin = doLogin;
 window.doLogout = doLogout;
 window.startPrayFocus = startPrayFocus;
 window.endPrayFocus = endPrayFocus;
+window.closeVerse = closeVerse;
 
 const CATS = ["가족","건강","사역","재정","관계","기타"];
 
@@ -450,7 +481,8 @@ let state = {
   authChecked: false,
   loginError: "",
   prayFocus: null, // { id, startedAt }
-  showPrayTime: null, // 방금 기도한 시간(초)
+  showPrayTime: null, // 방금 기도한 시간(초) - 저장용, 팝업엔 안 씀
+  showVerse: null, // 기도 마칠 때 보여줄 말씀 구절
 };
 
 let unsubscribePrayers = null;
@@ -562,6 +594,73 @@ function stopAmbient(){
 }
 
 /* ---- 기도 집중 모드 ---- */
+const VERSES = [
+  // 기도에 관하여
+  { ref: "빌립보서 4:6-7", text: "아무 것도 염려하지 말고 다만 모든 일에 기도와 간구로, 너희 구할 것을 감사함으로 하나님께 아뢰라." },
+  { ref: "마태복음 6:6", text: "너는 기도할 때에 네 골방에 들어가 문을 닫고 은밀한 중에 계신 네 아버지께 기도하라." },
+  { ref: "예레미야 33:3", text: "너는 내게 부르짖으라 내가 네게 응답하겠고 네가 알지 못하는 크고 은밀한 일을 네게 보이리라." },
+  { ref: "데살로니가전서 5:16-18", text: "항상 기뻐하라 쉬지 말고 기도하라 범사에 감사하라." },
+  { ref: "야고보서 5:16", text: "의인의 간구는 역사하는 힘이 큼이니라." },
+  { ref: "요한복음 15:7", text: "너희가 내 안에 거하고 내 말이 너희 안에 거하면 무엇이든지 원하는 대로 구하라 그리하면 이루리라." },
+  { ref: "마가복음 11:24", text: "무엇이든지 기도하고 구하는 것은 받은 줄로 믿으라 그리하면 너희에게 그대로 되리라." },
+  { ref: "마태복음 7:7", text: "구하라 그리하면 너희에게 주실 것이요 찾으라 그리하면 찾아낼 것이요 문을 두드리라 그리하면 너희에게 열릴 것이니." },
+  { ref: "히브리서 4:16", text: "그러므로 우리는 긍휼하심을 받고 때를 따라 돕는 은혜를 얻기 위하여 은혜의 보좌 앞에 담대히 나아갈 것이니라." },
+
+  // 위로가 필요할 때
+  { ref: "시편 46:1", text: "하나님은 우리의 피난처시요 힘이시니 환난 중에 만날 큰 도움이시라." },
+  { ref: "시편 34:18", text: "여호와는 마음이 상한 자를 가까이 하시고 충심으로 통회하는 자를 구원하시는도다." },
+  { ref: "마태복음 11:28", text: "수고하고 무거운 짐 진 자들아 다 내게로 오라 내가 너희를 쉬게 하리라." },
+  { ref: "시편 30:5", text: "그의 노염은 잠깐이요 그의 은총은 평생이로다 저녁에는 울음이 깃들일지라도 아침에는 기쁨이 오리로다." },
+  { ref: "요한복음 14:27", text: "평안을 너희에게 끼치노니 곧 내 평안을 너희에게 주노라 너희는 마음에 근심하지도 말고 두려워하지도 말라." },
+  { ref: "골로새서 3:15", text: "그리스도의 평강이 너희 마음을 주장하게 하라." },
+  { ref: "시편 55:22", text: "네 짐을 여호와께 맡기라 그가 너를 붙드시고 의인의 요동함을 영원히 허락하지 아니하시리로다." },
+  { ref: "고린도후서 1:3-4", text: "자비의 아버지시요 모든 위로의 하나님이신 그가 우리의 모든 환난 중에서 우리를 위로하시는도다." },
+  { ref: "시편 147:3", text: "상심한 자들을 고치시며 그들의 상처를 싸매시는도다." },
+
+  // 용기와 힘이 필요할 때
+  { ref: "이사야 40:31", text: "오직 여호와를 앙망하는 자는 새 힘을 얻으리니 독수리가 날개치며 올라감 같을 것이요." },
+  { ref: "이사야 41:10", text: "두려워하지 말라 내가 너와 함께 함이라 놀라지 말라 나는 네 하나님이 됨이라 내가 너를 굳세게 하리라." },
+  { ref: "여호수아 1:9", text: "내가 네게 명령한 것이 아니냐 강하고 담대하라 두려워하지 말며 놀라지 말라 네 하나님 여호와가 너와 함께 하느니라." },
+  { ref: "신명기 31:6", text: "강하고 담대하라 두려워하지 말라 네 하나님 여호와 그가 너와 함께 가시며 결코 너를 떠나지 아니하시며 버리지 아니하실 것임이라." },
+  { ref: "빌립보서 4:13", text: "내게 능력 주시는 자 안에서 내가 모든 것을 할 수 있느니라." },
+  { ref: "요한복음 16:33", text: "세상에서는 너희가 환난을 당하나 담대하라 내가 세상을 이기었노라." },
+  { ref: "고린도후서 12:9", text: "내 은혜가 네게 족하도다 이는 내 능력이 약한 데서 온전하여짐이라." },
+  { ref: "갈라디아서 6:9", text: "우리가 선을 행하되 낙심하지 말지니 포기하지 아니하면 때가 이르매 거두리라." },
+
+  // 신뢰와 인도하심
+  { ref: "잠언 3:5-6", text: "너는 마음을 다하여 여호와를 신뢰하고 네 명철을 의지하지 말라 너는 범사에 그를 인정하라 그리하면 네 길을 지도하시리라." },
+  { ref: "시편 23:1", text: "여호와는 나의 목자시니 내게 부족함이 없으리로다." },
+  { ref: "시편 121:1-2", text: "내가 산을 향하여 눈을 들리라 나의 도움이 어디서 올까 나의 도움은 천지를 지으신 여호와에게서로다." },
+  { ref: "시편 121:3-4", text: "여호와께서 너를 실족하지 아니하게 하시며 너를 지키시는 이가 졸지도 아니하시고 주무시지도 아니하시리로다." },
+  { ref: "잠언 16:3", text: "너의 행사를 여호와께 맡기라 그리하면 네가 경영하는 것이 이루어지리라." },
+  { ref: "로마서 8:28", text: "하나님을 사랑하는 자 곧 그의 뜻대로 부르심을 입은 자들에게는 모든 것이 합력하여 선을 이루느니라." },
+  { ref: "히브리서 13:5", text: "내가 결코 너희를 버리지 아니하고 너희를 떠나지 아니하리라." },
+
+  // 두려움과 염려가 있을 때
+  { ref: "시편 27:1", text: "여호와는 나의 빛이요 나의 구원이시니 내가 누구를 두려워하리요." },
+  { ref: "베드로전서 5:7", text: "너희 염려를 다 주께 맡기라 이는 그가 너희를 돌보심이라." },
+  { ref: "이사야 43:2", text: "네가 물 가운데로 지날 때에 내가 너와 함께 할 것이라 강을 건널 때에 물이 너를 침몰하지 못하리라." },
+  { ref: "요한1서 4:18", text: "사랑 안에 두려움이 없고 온전한 사랑이 두려움을 내쫓나니." },
+  { ref: "시편 91:1-2", text: "지존자의 은밀한 곳에 거주하는 자여, 나는 여호와를 향하여 말하기를 그는 나의 피난처요 나의 요새라 하리라." },
+
+  // 사랑과 은혜
+  { ref: "요한복음 3:16", text: "하나님이 세상을 이처럼 사랑하사 독생자를 주셨으니 그를 믿는 자마다 영생을 얻게 하려 하심이라." },
+  { ref: "로마서 5:8", text: "우리가 아직 죄인 되었을 때에 그리스도께서 우리를 위하여 죽으심으로 하나님께서 우리에 대한 자기의 사랑을 확증하셨느니라." },
+  { ref: "에베소서 2:8", text: "너희는 그 은혜에 의하여 믿음으로 말미암아 구원을 받았으니 이것은 너희에게서 난 것이 아니요 하나님의 선물이라." },
+
+  // 기쁨과 감사
+  { ref: "시편 34:8", text: "너희는 여호와의 선하심을 맛보아 알지어다 그에게 피하는 자는 복이 있도다." },
+  { ref: "시편 37:4", text: "또 여호와를 기뻐하라 그가 네 마음의 소원을 이루어 주시리로다." },
+  { ref: "느헤미야 8:10", text: "여호와를 기뻐하는 것이 너희의 힘이니라." },
+  { ref: "에베소서 3:20", text: "우리 가운데서 역사하시는 능력대로 우리가 구하거나 생각하는 모든 것에 더 넘치도록 능히 하실 이에게." },
+
+  // 인내와 소망
+  { ref: "히브리서 11:1", text: "믿음은 바라는 것들의 실상이요 보이지 않는 것들의 증거니." },
+  { ref: "야고보서 1:2-3", text: "너희가 여러 가지 시험을 만나거든 온전히 기쁘게 여기라 이는 너희 믿음의 시련이 인내를 만들어 내는 줄 앎이라." },
+  { ref: "로마서 5:3-4", text: "환난은 인내를, 인내는 연단을, 연단은 소망을 이루는 줄 앎이로다." },
+  { ref: "예레미야 29:11", text: "내가 너희를 향한 계획을 아나니 평안이요 재앙이 아니니라 너희에게 미래와 희망을 주는 것이니라." },
+];
+
 function startPrayFocus(id){
   state.prayFocus = { id, startedAt: Date.now() };
   render();
@@ -575,14 +674,20 @@ async function endPrayFocus(){
   stopAmbient();
   state.prayFocus = null;
   state.showPrayTime = elapsedSec;
+  state.showVerse = VERSES[Math.floor(Math.random() * VERSES.length)];
   render();
-  setTimeout(()=>{ state.showPrayTime = null; render(); }, 2200);
 
   const p = state.prayers.find(x=>x.id===id);
   const newTotal = (p && p.totalPrayedSeconds ? p.totalPrayedSeconds : 0) + elapsedSec;
   try{
     await updateDoc(doc(db, "prayers", id), { totalPrayedSeconds: newTotal });
   }catch(e){ console.error(e); }
+}
+
+function closeVerse(){
+  state.showVerse = null;
+  state.showPrayTime = null;
+  render();
 }
 
 function formatDuration(sec){
@@ -628,7 +733,7 @@ function render(){
     </div>
     ${state.tab === 'home' ? `<button class="fab" onclick="openAddModal()">+</button>` : ''}
     ${state.showSeal ? renderSeal() : ''}
-    ${state.showPrayTime ? renderPrayTimeOverlay() : ''}
+    ${state.showVerse ? renderVerseOverlay() : ''}
     ${state.modal ? renderModal() : ''}
   `;
 }
@@ -645,10 +750,16 @@ function renderPrayFocusScreen(){
   `;
 }
 
-function renderPrayTimeOverlay(){
+function renderVerseOverlay(){
+  const v = state.showVerse;
   return `
-    <div class="seal-overlay">
-      <div class="seal" style="border-color:var(--gold-deep); color:var(--gold-deep);">이번 기도<br>${formatDuration(state.showPrayTime)}</div>
+    <div class="seal-overlay" onclick="if(event.target===this) closeVerse()">
+      <div class="verse-card">
+        <div class="verse-mark">"</div>
+        <p class="verse-text">${escapeHtml(v.text)}</p>
+        <div class="verse-ref">${escapeHtml(v.ref)}</div>
+        <button class="btn btn-primary" onclick="closeVerse()" style="margin-top:18px;">아멘</button>
+      </div>
     </div>
   `;
 }
