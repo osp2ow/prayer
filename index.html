@@ -4,26 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>기도의 자리</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <style>
   :root{
-    --bg: #E3E6EC;
-    --bg-deep: #D6DAE3;
+    --bg: #EAECF1;
+    --bg-deep: #DCE0E9;
     --ink: #2B3244;
-    --ink-soft: #5B6478;
-    --card: #F7F6F2;
-    --line: #C7CAD4;
+    --ink-soft: #6B7284;
+    --card: #FFFFFF;
+    --card-soft: #F6F5F1;
+    --line: #E7E5DE;
     --gold: #C89B3C;
     --gold-deep: #9C7526;
     --rose: #9C6558;
+    --font-title: 'Gowun Dodum', 'Pretendard', sans-serif;
+    --font-body: 'Pretendard', 'Noto Sans KR', sans-serif;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
     background: radial-gradient(ellipse at top, var(--bg-deep), var(--bg) 60%);
-    font-family:'Noto Sans KR', sans-serif;
+    font-family:var(--font-body);
     color:var(--ink);
     min-height:100vh;
     display:flex;
@@ -35,70 +37,75 @@
     max-width:520px;
     display:flex;
     flex-direction:column;
-    gap:18px;
+    gap:16px;
   }
   header.top{
     display:flex;
-    align-items:baseline;
+    align-items:flex-start;
     justify-content:space-between;
     padding:0 4px;
   }
   header.top h1{
-    font-family:'Noto Serif KR', serif;
-    font-weight:700;
-    font-size:22px;
-    letter-spacing:0.5px;
+    font-family:var(--font-title);
+    font-weight:400;
+    font-size:23px;
+    letter-spacing:0.3px;
     margin:0;
   }
+  .header-right{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:4px;
+  }
   header.top .date{
-    font-size:12px;
+    font-size:11.5px;
     color:var(--ink-soft);
   }
+  .logout-btn{
+    background:transparent;
+    border:none;
+    cursor:pointer;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    text-decoration:underline;
+    padding:0;
+  }
+  .logout-btn:hover{ color:var(--ink); }
 
-  /* 노트북 리본 탭 */
+  /* 세그먼트 탭 */
   .tabs{
     display:flex;
-    gap:6px;
-    padding:0 4px;
+    gap:4px;
+    padding:4px;
+    background:var(--bg-deep);
+    border-radius:14px;
   }
   .tab{
     flex:1;
     text-align:center;
-    padding:10px 6px 12px;
-    font-family:'Noto Serif KR', serif;
+    padding:9px 6px;
+    font-family:var(--font-title);
     font-size:14px;
-    font-weight:500;
+    font-weight:400;
     color:var(--ink-soft);
-    background:linear-gradient(180deg, #DEE1E8, #D2D6DF);
-    border-radius:8px 8px 0 0;
+    background:transparent;
+    border-radius:10px;
     cursor:pointer;
-    position:relative;
-    border:1px solid var(--line);
-    border-bottom:none;
+    border:none;
     transition:all .2s ease;
   }
   .tab.active{
     background:var(--card);
     color:var(--ink);
-    font-weight:700;
-    transform:translateY(2px);
-    box-shadow: 0 -2px 6px rgba(43,50,68,0.06);
+    box-shadow: 0 2px 8px rgba(43,50,68,0.12);
   }
 
   .page{
-    background:var(--card);
-    border-radius:0 4px 10px 10px;
-    border:1px solid var(--line);
-    padding:22px 20px 26px;
+    background:transparent;
+    border-radius:16px;
+    padding:2px 2px 26px;
     min-height:420px;
-    background-image: repeating-linear-gradient(
-      to bottom,
-      transparent,
-      transparent 33px,
-      var(--line) 34px
-    );
-    background-position: 0 62px;
-    box-shadow: 0 8px 24px rgba(43,50,68,0.10);
   }
 
   /* 입력 폼 */
@@ -139,61 +146,70 @@
   .btn-ghost{ background:transparent; color:var(--ink-soft); border:1px solid var(--line); }
   .btn-row{ display:flex; gap:8px; justify-content:flex-end; margin-top:6px; }
 
-  /* 리스트 */
+  /* 리스트 - 카드형 */
   .empty{
     text-align:center;
     color:var(--ink-soft);
     font-size:13px;
     padding:60px 10px;
-    font-family:'Noto Serif KR', serif;
+    font-family:var(--font-title);
+    background:var(--card);
+    border-radius:16px;
   }
+  .prayer-list{ display:flex; flex-direction:column; gap:10px; }
   .prayer-item{
-    padding:10px 4px;
-    border-bottom:1px dashed var(--line);
+    background:var(--card);
+    border-radius:16px;
+    padding:16px 16px 14px;
     display:flex;
-    gap:10px;
+    gap:12px;
     align-items:flex-start;
+    box-shadow: 0 2px 10px rgba(43,50,68,0.06);
+    border:1px solid rgba(43,50,68,0.04);
   }
-  .prayer-item:last-child{ border-bottom:none; }
   .check{
-    width:20px; height:20px;
+    width:22px; height:22px;
     border-radius:50%;
     border:1.5px solid var(--gold-deep);
     flex-shrink:0;
-    margin-top:2px;
+    margin-top:1px;
     cursor:pointer;
     display:flex; align-items:center; justify-content:center;
-    font-size:11px;
+    font-size:12px;
     color:transparent;
     transition:all .2s ease;
   }
   .check.done{ background:var(--gold); color:#fff; border-color:var(--gold-deep); }
-  .prayer-body{ flex:1; }
-  .prayer-title{ font-weight:700; font-size:14.5px; }
+  .prayer-body{ flex:1; min-width:0; }
+  .prayer-title{ font-weight:700; font-size:15px; }
   .prayer-title.done{ text-decoration:line-through; color:var(--ink-soft); }
-  .prayer-meta{ font-size:11px; color:var(--ink-soft); margin-top:2px; }
+  .prayer-meta{ font-size:11px; color:var(--ink-soft); margin-top:6px; }
   .prayer-tag{
-    display:inline-block;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
     font-size:10.5px;
     background:var(--bg-deep);
     color:var(--ink-soft);
-    padding:2px 8px;
+    padding:3px 9px 3px 7px;
     border-radius:10px;
-    margin-top:4px;
+    margin-top:8px;
+    font-weight:500;
   }
-  .prayer-content-preview{ font-size:12.5px; color:var(--ink-soft); margin-top:4px; }
+  .tag-dot{ width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .prayer-content-preview{ font-size:12.5px; color:var(--ink-soft); margin-top:5px; line-height:1.5; }
 
-  .filters{ display:flex; gap:6px; margin-bottom:8px; }
+  .filters{ display:flex; gap:6px; margin-bottom:12px; padding:0 2px; }
   .filter-pill{
     font-size:12px;
-    padding:5px 12px;
+    padding:6px 13px;
     border-radius:14px;
     border:1px solid var(--line);
     color:var(--ink-soft);
     cursor:pointer;
-    background:transparent;
+    background:var(--card);
   }
-  .filter-pill.active{ background:var(--ink); color:#F7F6F2; border-color:var(--ink); }
+  .filter-pill.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
 
   .fab{
     position:fixed;
@@ -239,7 +255,7 @@
     margin-bottom:10px;
   }
   .pray-card h2{
-    font-family:'Noto Serif KR', serif;
+    font-family:var(--font-title);
     font-size:21px;
     margin:0 0 12px;
     line-height:1.4;
@@ -274,7 +290,7 @@
     border-radius:50%;
     border:5px solid var(--rose);
     color:var(--rose);
-    font-family:'Noto Serif KR', serif;
+    font-family:var(--font-title);
     font-weight:700;
     font-size:22px;
     display:flex; align-items:center; justify-content:center;
@@ -314,7 +330,7 @@
     box-shadow:0 20px 50px rgba(43,50,68,0.3);
   }
   .modal-title{
-    font-family:'Noto Serif KR', serif;
+    font-family:var(--font-title);
     font-weight:700;
     font-size:18px;
     margin:0 0 16px;
@@ -334,7 +350,6 @@
   }
   .icon-btn:hover{ color:var(--ink); }
   .item-actions{ display:flex; gap:2px; margin-left:auto; flex-shrink:0; }
-  .prayer-item{ align-items:flex-start; }
   .pray-card-edit{
     position:absolute;
     top:10px; right:10px;
@@ -354,7 +369,7 @@
   }
   @keyframes focusFadeIn{ from{ opacity:0; } to{ opacity:1; } }
   .focus-title{
-    font-family:'Noto Serif KR', serif;
+    font-family:var(--font-title);
     font-size:17px;
     opacity:0.9;
     letter-spacing:0.5px;
@@ -399,14 +414,14 @@
     box-shadow:0 20px 50px rgba(43,50,68,0.3);
   }
   .verse-mark{
-    font-family:'Noto Serif KR', serif;
+    font-family:var(--font-title);
     font-size:44px;
     color:var(--gold);
     line-height:1;
     margin-bottom:4px;
   }
   .verse-text{
-    font-family:'Noto Serif KR', serif;
+    font-family:var(--font-title);
     font-size:17px;
     line-height:1.75;
     color:var(--ink);
@@ -468,6 +483,17 @@ window.endPrayFocus = endPrayFocus;
 window.closeVerse = closeVerse;
 
 const CATS = ["가족","건강","사역","재정","관계","기타"];
+const CAT_COLORS = {
+  "가족": "#E28B7D",
+  "건강": "#5FA88A",
+  "사역": "#7B8FD6",
+  "재정": "#D6A14A",
+  "관계": "#C87FB0",
+  "기타": "#9AA0AE",
+};
+function catDot(cat){
+  return `<span class="tag-dot" style="background:${CAT_COLORS[cat]||'#9AA0AE'};"></span>`;
+}
 
 let state = {
   tab: "home",
@@ -742,7 +768,10 @@ function render(){
   root.innerHTML = `
     <header class="top">
       <h1>기도의 자리</h1>
-      <span class="date">${todayLabel()} <button class="icon-btn" onclick="doLogout()" title="로그아웃" style="margin-left:6px;">로그아웃</button></span>
+      <div class="header-right">
+        <span class="date">${todayLabel()}</span>
+        <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+      </div>
     </header>
     <div class="tabs">
       ${tab('home','목록')}
@@ -834,20 +863,20 @@ function renderHome(){
   if(list.length===0){
     return filters + `<div class="empty">아직 기록된 기도 제목이 없어요.<br>우측 아래 + 를 눌러 첫 기도 제목을 적어보세요.</div>`;
   }
-  return filters + list.map(p => `
+  return filters + `<div class="prayer-list">` + list.map(p => `
     <div class="prayer-item">
       <div class="check ${p.done?'done':''}" onclick="toggleDone('${p.id}')">${p.done?'✓':''}</div>
       <div class="prayer-body">
         <div class="prayer-title ${p.done?'done':''}">${escapeHtml(p.title)}</div>
         <div class="prayer-content-preview">${escapeHtml(p.content||'')}</div>
-        <div class="prayer-tag">${p.cat}</div>
+        <div class="prayer-tag">${catDot(p.cat)}${p.cat}</div>
         <div class="prayer-meta">${p.createdAt} 시작${p.done ? ' · '+p.answeredAt+' 응답' : ''}${p.totalPrayedSeconds ? ' · 총 '+formatDuration(p.totalPrayedSeconds)+' 기도' : ''}</div>
       </div>
       <div class="item-actions">
         <button class="icon-btn" onclick="openEditModal('${p.id}')" title="수정">✎</button>
       </div>
     </div>
-  `).join('');
+  `).join('') + `</div>`;
 }
 
 function setFilter(f){ state.filter = f; render(); }
@@ -860,17 +889,17 @@ function renderAnswered(){
   if(list.length===0){
     return `<div class="empty">아직 응답된 기도가 없어요.<br>응답되면 이곳에 감사의 기록으로 쌓여요.</div>`;
   }
-  return list.map(p => `
+  return `<div class="prayer-list">` + list.map(p => `
     <div class="prayer-item">
       <div class="check done">✓</div>
       <div class="prayer-body">
         <div class="prayer-title">${escapeHtml(p.title)}</div>
         <div class="prayer-meta">${p.createdAt} → ${p.answeredAt} 응답</div>
         ${p.answerNote ? `<div class="prayer-content-preview">"${escapeHtml(p.answerNote)}"</div>` : ''}
-        <div class="prayer-tag">${p.cat}</div>
+        <div class="prayer-tag">${catDot(p.cat)}${p.cat}</div>
       </div>
     </div>
-  `).join('');
+  `).join('') + `</div>`;
 }
 
 function renderPrayMode(){
