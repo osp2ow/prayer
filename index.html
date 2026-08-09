@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>기도의 자리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #E3E6EC;
+    --bg-deep: #D6DAE3;
+    --ink: #2B3244;
+    --ink-soft: #5B6478;
+    --card: #F7F6F2;
+    --line: #C7CAD4;
+    --gold: #C89B3C;
+    --gold-deep: #9C7526;
+    --rose: #9C6558;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(ellipse at top, var(--bg-deep), var(--bg) 60%);
+    font-family:'Noto Sans KR', sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px;
+  }
+  .app{
+    width:100%;
+    max-width:520px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+  header.top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    padding:0 4px;
+  }
+  header.top h1{
+    font-family:'Noto Serif KR', serif;
+    font-weight:700;
+    font-size:22px;
+    letter-spacing:0.5px;
+    margin:0;
+  }
+  header.top .date{
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+
+  /* 노트북 리본 탭 */
+  .tabs{
+    display:flex;
+    gap:6px;
+    padding:0 4px;
+  }
+  .tab{
+    flex:1;
+    text-align:center;
+    padding:10px 6px 12px;
+    font-family:'Noto Serif KR', serif;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink-soft);
+    background:linear-gradient(180deg, #DEE1E8, #D2D6DF);
+    border-radius:8px 8px 0 0;
+    cursor:pointer;
+    position:relative;
+    border:1px solid var(--line);
+    border-bottom:none;
+    transition:all .2s ease;
+  }
+  .tab.active{
+    background:var(--card);
+    color:var(--ink);
+    font-weight:700;
+    transform:translateY(2px);
+    box-shadow: 0 -2px 6px rgba(43,50,68,0.06);
+  }
+
+  .page{
+    background:var(--card);
+    border-radius:0 4px 10px 10px;
+    border:1px solid var(--line);
+    padding:22px 20px 26px;
+    min-height:420px;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 33px,
+      var(--line) 34px
+    );
+    background-position: 0 62px;
+    box-shadow: 0 8px 24px rgba(43,50,68,0.10);
+  }
+
+  /* 입력 폼 */
+  .field{ margin-bottom:14px; }
+  .field label{
+    display:block;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+    font-weight:500;
+  }
+  .field input, .field textarea, .field select{
+    width:100%;
+    background:transparent;
+    border:none;
+    border-bottom:1px solid var(--line);
+    font-family:'Noto Sans KR', sans-serif;
+    font-size:15px;
+    color:var(--ink);
+    padding:4px 2px 8px;
+    outline:none;
+  }
+  .field textarea{ resize:vertical; min-height:50px; line-height:33px; }
+  .field input:focus, .field textarea:focus, .field select:focus{ border-bottom:1px solid var(--gold-deep); }
+
+  .btn{
+    font-family:'Noto Sans KR', sans-serif;
+    font-weight:700;
+    font-size:14px;
+    padding:10px 18px;
+    border-radius:20px;
+    border:none;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:active{ transform:scale(0.96); }
+  .btn-primary{ background:var(--ink); color:#F7F6F2; }
+  .btn-ghost{ background:transparent; color:var(--ink-soft); border:1px solid var(--line); }
+  .btn-row{ display:flex; gap:8px; justify-content:flex-end; margin-top:6px; }
+
+  /* 리스트 */
+  .empty{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13px;
+    padding:60px 10px;
+    font-family:'Noto Serif KR', serif;
+  }
+  .prayer-item{
+    padding:10px 4px;
+    border-bottom:1px dashed var(--line);
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+  }
+  .prayer-item:last-child{ border-bottom:none; }
+  .check{
+    width:20px; height:20px;
+    border-radius:50%;
+    border:1.5px solid var(--gold-deep);
+    flex-shrink:0;
+    margin-top:2px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px;
+    color:transparent;
+    transition:all .2s ease;
+  }
+  .check.done{ background:var(--gold); color:#fff; border-color:var(--gold-deep); }
+  .prayer-body{ flex:1; }
+  .prayer-title{ font-weight:700; font-size:14.5px; }
+  .prayer-title.done{ text-decoration:line-through; color:var(--ink-soft); }
+  .prayer-meta{ font-size:11px; color:var(--ink-soft); margin-top:2px; }
+  .prayer-tag{
+    display:inline-block;
+    font-size:10.5px;
+    background:var(--bg-deep);
+    color:var(--ink-soft);
+    padding:2px 8px;
+    border-radius:10px;
+    margin-top:4px;
+  }
+  .prayer-content-preview{ font-size:12.5px; color:var(--ink-soft); margin-top:4px; }
+
+  .filters{ display:flex; gap:6px; margin-bottom:8px; }
+  .filter-pill{
+    font-size:12px;
+    padding:5px 12px;
+    border-radius:14px;
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    cursor:pointer;
+    background:transparent;
+  }
+  .filter-pill.active{ background:var(--ink); color:#F7F6F2; border-color:var(--ink); }
+
+  .fab{
+    position:fixed;
+    bottom:28px;
+    left:50%;
+    transform:translateX(calc(-50% + 240px));
+    width:48px; height:48px;
+    border-radius:50%;
+    background:var(--ink);
+    color:#F7F6F2;
+    font-size:24px;
+    border:none;
+    box-shadow:0 6px 16px rgba(43,50,68,0.35);
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  @media (max-width:560px){
+    .fab{ transform:translateX(0); right:16px; left:auto; bottom:24px; }
+  }
+
+  /* 기도 모드 (카드) */
+  .pray-mode{ display:flex; flex-direction:column; align-items:center; gap:16px; }
+  .pray-count{ font-size:12px; color:var(--ink-soft); }
+  .pray-card{
+    width:100%;
+    min-height:260px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:28px 22px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    text-align:center;
+    box-shadow:0 10px 26px rgba(43,50,68,0.14);
+    position:relative;
+  }
+  .pray-card .eyebrow{
+    font-size:11px;
+    letter-spacing:2px;
+    color:var(--gold-deep);
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .pray-card h2{
+    font-family:'Noto Serif KR', serif;
+    font-size:21px;
+    margin:0 0 12px;
+    line-height:1.4;
+  }
+  .pray-card p{
+    font-size:14px;
+    color:var(--ink-soft);
+    line-height:1.7;
+    margin:0;
+    white-space:pre-wrap;
+  }
+  .pray-nav{ display:flex; gap:14px; align-items:center; }
+  .nav-btn{
+    width:38px; height:38px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:var(--card);
+    cursor:pointer;
+    font-size:16px;
+    color:var(--ink);
+  }
+
+  /* 응답 도장(seal) 애니메이션 */
+  .seal-overlay{
+    position:fixed; inset:0;
+    background:rgba(43,50,68,0.45);
+    display:flex; align-items:center; justify-content:center;
+    z-index:50;
+  }
+  .seal{
+    width:150px; height:150px;
+    border-radius:50%;
+    border:5px solid var(--rose);
+    color:var(--rose);
+    font-family:'Noto Serif KR', serif;
+    font-weight:700;
+    font-size:22px;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center;
+    line-height:1.3;
+    background:rgba(247,246,242,0.9);
+    transform:scale(2.2) rotate(-8deg);
+    opacity:0;
+    animation: stampIn .45s cubic-bezier(.2,1.4,.4,1) forwards;
+    box-shadow:0 0 0 3px rgba(156,101,88,0.15);
+  }
+  @keyframes stampIn{
+    0%{ transform:scale(2.2) rotate(-8deg); opacity:0; }
+    60%{ transform:scale(0.92) rotate(-8deg); opacity:1; }
+    100%{ transform:scale(1) rotate(-8deg); opacity:1; }
+  }
+
+  select#p-cat{ appearance:none; background:transparent; }
+
+  /* 수정/입력 모달 */
+  .modal-overlay{
+    position:fixed; inset:0;
+    background:rgba(43,50,68,0.5);
+    display:flex; align-items:center; justify-content:center;
+    z-index:60;
+    padding:20px;
+  }
+  .modal-box{
+    width:100%;
+    max-width:440px;
+    max-height:88vh;
+    overflow-y:auto;
+    background:var(--card);
+    border-radius:14px;
+    border:1px solid var(--line);
+    padding:22px 20px;
+    box-shadow:0 20px 50px rgba(43,50,68,0.3);
+  }
+  .modal-title{
+    font-family:'Noto Serif KR', serif;
+    font-weight:700;
+    font-size:18px;
+    margin:0 0 16px;
+  }
+  .modal-hint{
+    font-size:12px;
+    color:var(--gold-deep);
+    margin:-8px 0 16px;
+  }
+  .icon-btn{
+    background:transparent;
+    border:none;
+    cursor:pointer;
+    font-size:14px;
+    color:var(--ink-soft);
+    padding:2px 6px;
+  }
+  .icon-btn:hover{ color:var(--ink); }
+  .item-actions{ display:flex; gap:2px; margin-left:auto; flex-shrink:0; }
+  .prayer-item{ align-items:flex-start; }
+  .pray-card-edit{
+    position:absolute;
+    top:10px; right:10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app" id="app"></div>
+
+<script>
+const CATS = ["가족","건강","사역","재정","관계","기타"];
+
+let state = {
+  tab: "home",
+  filter: "all",
+  prayers: [
+    { id: 1, title: "아버지 건강 회복", content: "수술 후 회복이 순조롭게 되도록, 통증이 줄어들도록", cat: "건강", createdAt: "2026.07.02", done: false },
+    { id: 2, title: "학원 여름 특강 등록 은혜", content: "새로운 학생들이 채워지고, 등록한 학생들이 잘 정착하도록", cat: "사역", createdAt: "2026.06.20", done: true, answeredAt: "2026.08.01", answerNote: "특강반 정원이 다 찼습니다. 감사합니다." },
+    { id: 3, title: "동생 취업", content: "면접 본 회사에 잘 합격하도록, 하나님의 인도하심 안에서", cat: "가족", createdAt: "2026.07.28", done: false },
+  ],
+  playIndex: 0,
+  showSeal: null, // prayer object being sealed
+  modal: null, // { mode: 'edit' | 'answer', id: number|null }
+};
+
+function render(){
+  const root = document.getElementById('app');
+  root.innerHTML = `
+    <header class="top">
+      <h1>기도의 자리</h1>
+      <span class="date">${todayLabel()}</span>
+    </header>
+    <div class="tabs">
+      ${tab('home','목록')}
+      ${tab('pray','기도 모드')}
+      ${tab('answered','응답 기록')}
+    </div>
+    <div class="page">
+      ${state.tab === 'home' ? renderHome() : ''}
+      ${state.tab === 'pray' ? renderPrayMode() : ''}
+      ${state.tab === 'answered' ? renderAnswered() : ''}
+    </div>
+    ${state.tab === 'home' ? `<button class="fab" onclick="openAddModal()">+</button>` : ''}
+    ${state.showSeal ? renderSeal() : ''}
+    ${state.modal ? renderModal() : ''}
+  `;
+}
+
+function tab(key, label){
+  return `<div class="tab ${state.tab===key?'active':''}" onclick="setTab('${key}')">${label}</div>`;
+}
+
+function setTab(key){ state.tab = key; state.playIndex = 0; render(); }
+
+function todayLabel(){
+  const d = new Date();
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function renderHome(){
+  const list = state.prayers.filter(p => state.filter==='all' ? true : state.filter==='ongoing' ? !p.done : p.done);
+  const filters = `
+    <div class="filters">
+      <div class="filter-pill ${state.filter==='all'?'active':''}" onclick="setFilter('all')">전체</div>
+      <div class="filter-pill ${state.filter==='ongoing'?'active':''}" onclick="setFilter('ongoing')">기도 중</div>
+      <div class="filter-pill ${state.filter==='done'?'active':''}" onclick="setFilter('done')">응답됨</div>
+    </div>
+  `;
+  if(list.length===0){
+    return filters + `<div class="empty">아직 기록된 기도 제목이 없어요.<br>우측 아래 + 를 눌러 첫 기도 제목을 적어보세요.</div>`;
+  }
+  return filters + list.map(p => `
+    <div class="prayer-item">
+      <div class="check ${p.done?'done':''}" onclick="toggleDone(${p.id})">${p.done?'✓':''}</div>
+      <div class="prayer-body">
+        <div class="prayer-title ${p.done?'done':''}">${escapeHtml(p.title)}</div>
+        <div class="prayer-content-preview">${escapeHtml(p.content||'')}</div>
+        <div class="prayer-tag">${p.cat}</div>
+        <div class="prayer-meta">${p.createdAt} 시작${p.done ? ' · '+p.answeredAt+' 응답' : ''}</div>
+      </div>
+      <div class="item-actions">
+        <button class="icon-btn" onclick="openEditModal(${p.id})" title="수정">✎</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setFilter(f){ state.filter = f; render(); }
+
+function renderAnswered(){
+  const list = state.prayers.filter(p=>p.done);
+  if(list.length===0){
+    return `<div class="empty">아직 응답된 기도가 없어요.<br>응답되면 이곳에 감사의 기록으로 쌓여요.</div>`;
+  }
+  return list.map(p => `
+    <div class="prayer-item">
+      <div class="check done">✓</div>
+      <div class="prayer-body">
+        <div class="prayer-title">${escapeHtml(p.title)}</div>
+        <div class="prayer-meta">${p.createdAt} → ${p.answeredAt} 응답</div>
+        ${p.answerNote ? `<div class="prayer-content-preview">"${escapeHtml(p.answerNote)}"</div>` : ''}
+        <div class="prayer-tag">${p.cat}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPrayMode(){
+  const ongoing = state.prayers.filter(p=>!p.done);
+  if(ongoing.length===0){
+    return `<div class="empty">지금 기도 중인 제목이 없어요.<br>목록 탭에서 기도 제목을 추가해보세요.</div>`;
+  }
+  if(state.playIndex >= ongoing.length) state.playIndex = 0;
+  const p = ongoing[state.playIndex];
+  return `
+    <div class="pray-mode">
+      <div class="pray-count">${state.playIndex+1} / ${ongoing.length}</div>
+      <div class="pray-card">
+        <div class="eyebrow">${p.cat} · ${p.createdAt}</div>
+        <h2>${escapeHtml(p.title)}</h2>
+        <p>${escapeHtml(p.content||'')}</p>
+      </div>
+      <div class="pray-nav">
+        <button class="nav-btn" onclick="prevCard(${ongoing.length})">‹</button>
+        <button class="btn btn-primary" onclick="markAnsweredFlow(${p.id})">응답됨으로 표시</button>
+        <button class="nav-btn" onclick="nextCard(${ongoing.length})">›</button>
+      </div>
+    </div>
+  `;
+}
+
+function prevCard(len){ state.playIndex = (state.playIndex-1+len)%len; render(); }
+function nextCard(len){ state.playIndex = (state.playIndex+1)%len; render(); }
+
+function toggleDone(id){
+  const p = state.prayers.find(x=>x.id===id);
+  if(!p) return;
+  if(!p.done){ markAnsweredFlow(id); return; }
+  p.done = false; p.answeredAt = null; p.answerNote = null;
+  render();
+}
+
+// 응답됨으로 표시 -> 간증/결과를 적는 모달을 먼저 띄움
+function markAnsweredFlow(id){
+  state.modal = { mode: 'answer', id };
+  render();
+}
+
+function confirmAnswer(id){
+  const p = state.prayers.find(x=>x.id===id);
+  if(!p) return;
+  const note = document.getElementById('m-answer-note').value.trim();
+  const dateVal = document.getElementById('m-answer-date').value;
+  p.done = true;
+  p.answeredAt = dateVal ? formatDateInput(dateVal) : todayLabel();
+  p.answerNote = note;
+  state.modal = null;
+  state.showSeal = p;
+  render();
+  setTimeout(()=>{ state.showSeal = null; render(); }, 1400);
+}
+
+function renderSeal(){
+  return `
+    <div class="seal-overlay">
+      <div class="seal">응답<br>${state.showSeal.answeredAt}</div>
+    </div>
+  `;
+}
+
+/* ---- 추가 / 수정 / 응답 기록 모달 ---- */
+
+function openAddModal(){
+  state.modal = { mode: 'edit', id: null };
+  render();
+}
+
+function openEditModal(id){
+  state.modal = { mode: 'edit', id };
+  render();
+}
+
+function closeModal(){
+  state.modal = null;
+  render();
+}
+
+function renderModal(){
+  const { mode, id } = state.modal;
+  if(mode === 'answer'){
+    const p = state.prayers.find(x=>x.id===id);
+    return `
+      <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
+        <div class="modal-box">
+          <div class="modal-title">응답 기록 남기기</div>
+          <div class="modal-hint">"${escapeHtml(p.title)}"에 대한 간증이나 결과를 적어주세요</div>
+          <div class="field">
+            <label>응답 날짜</label>
+            <input type="date" id="m-answer-date" value="${toDateInputValue(new Date())}">
+          </div>
+          <div class="field">
+            <label>간증 / 결과 (선택)</label>
+            <textarea id="m-answer-note" rows="4" placeholder="어떻게 응답되었는지 자유롭게 적어보세요"></textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-ghost" onclick="closeModal()">취소</button>
+            <button class="btn btn-primary" onclick="confirmAnswer(${id})">응답 도장 찍기</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // mode === 'edit' (추가 또는 수정)
+  const p = id ? state.prayers.find(x=>x.id===id) : null;
+  const isNew = !p;
+  const catOptions = CATS.map(c => `<option value="${c}" ${p && p.cat===c ? 'selected':''}>${c}</option>`).join('');
+  return `
+    <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
+      <div class="modal-box">
+        <div class="modal-title">${isNew ? '기도 제목 추가' : '기도 제목 수정'}</div>
+        <div class="field">
+          <label>제목</label>
+          <input type="text" id="m-title" value="${p ? escapeAttr(p.title) : ''}" placeholder="예) 아버지 건강 회복">
+        </div>
+        <div class="field">
+          <label>내용</label>
+          <textarea id="m-content" rows="3" placeholder="조금 더 자세히 적어주세요">${p ? escapeHtml(p.content||'') : ''}</textarea>
+        </div>
+        <div class="field">
+          <label>카테고리</label>
+          <select id="m-cat">${catOptions}</select>
+        </div>
+        <div class="field">
+          <label>시작일</label>
+          <input type="date" id="m-created" value="${p ? toDateInputValue(parseLabelDate(p.createdAt)) : toDateInputValue(new Date())}">
+        </div>
+        ${p && p.done ? `
+        <div class="field">
+          <label>응답 날짜</label>
+          <input type="date" id="m-answered" value="${toDateInputValue(parseLabelDate(p.answeredAt))}">
+        </div>
+        <div class="field">
+          <label>간증 / 결과</label>
+          <textarea id="m-answernote" rows="3">${escapeHtml(p.answerNote||'')}</textarea>
+        </div>
+        ` : ''}
+        <div class="btn-row">
+          ${!isNew ? `<button class="btn btn-ghost" onclick="deletePrayer(${id})" style="margin-right:auto;color:var(--rose);">삭제</button>` : ''}
+          <button class="btn btn-ghost" onclick="closeModal()">취소</button>
+          <button class="btn btn-primary" onclick="saveModal(${isNew ? 'null' : id})">저장</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function saveModal(id){
+  const title = document.getElementById('m-title').value.trim();
+  if(!title){ alert('기도 제목을 입력해주세요'); return; }
+  const content = document.getElementById('m-content').value.trim();
+  const cat = document.getElementById('m-cat').value;
+  const createdVal = document.getElementById('m-created').value;
+  const createdAt = createdVal ? formatDateInput(createdVal) : todayLabel();
+
+  if(id === null){
+    state.prayers.unshift({ id: Date.now(), title, content, cat, createdAt, done:false });
+  } else {
+    const p = state.prayers.find(x=>x.id===id);
+    p.title = title; p.content = content; p.cat = cat; p.createdAt = createdAt;
+    if(p.done){
+      const answeredVal = document.getElementById('m-answered').value;
+      p.answeredAt = answeredVal ? formatDateInput(answeredVal) : p.answeredAt;
+      p.answerNote = document.getElementById('m-answernote').value.trim();
+    }
+  }
+  state.modal = null;
+  render();
+}
+
+function deletePrayer(id){
+  if(!confirm('이 기도 제목을 삭제할까요?')) return;
+  state.prayers = state.prayers.filter(x=>x.id!==id);
+  state.modal = null;
+  render();
+}
+
+/* ---- 날짜 유틸 ---- */
+function toDateInputValue(d){
+  if(!(d instanceof Date) || isNaN(d)) d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function formatDateInput(val){
+  const [y,m,d] = val.split('-');
+  return `${y}.${m}.${d}`;
+}
+function parseLabelDate(label){
+  if(!label) return new Date();
+  const [y,m,d] = label.split('.').map(Number);
+  return new Date(y, (m||1)-1, d||1);
+}
+function escapeAttr(str){
+  return escapeHtml(str).replace(/"/g,'&quot;');
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+render();
+</script>
+</body>
+</html>
