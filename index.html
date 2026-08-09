@@ -499,79 +499,66 @@ function subscribeToPrayers(){
   });
 }
 
-/* ---- 잔잔한 피아노풍 배경음 (직접 합성, 저작권 없음) ---- */
-let audioCtx = null;
-let masterGain = null;
-let ambientTimers = [];
+/* ---- 배경음: 지정된 유튜브 CCM 3곡 중 랜덤 재생 (화면엔 안 보이게) ---- */
+const BG_VIDEO_IDS = ["pEt89CrE-6A", "f742p7mQ0Ic", "CDAgDlwAdKw"];
 
-function startAmbient(){
+let ytApiReady = false;
+let ytApiLoading = false;
+let ytReadyCallbacks = [];
+let ytPlayer = null;
+
+function loadYoutubeApi(){
+  if(ytApiReady) return Promise.resolve();
+  return new Promise((resolve) => {
+    ytReadyCallbacks.push(resolve);
+    if(ytApiLoading) return;
+    ytApiLoading = true;
+    window.onYouTubeIframeAPIReady = () => {
+      ytApiReady = true;
+      ytReadyCallbacks.forEach(cb => cb());
+      ytReadyCallbacks = [];
+    };
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+  });
+}
+
+function ensureYtContainer(){
+  let container = document.getElementById('yt-bg-player');
+  if(!container){
+    container = document.createElement('div');
+    container.id = 'yt-bg-player';
+    container.style.cssText = 'position:fixed; top:0; left:0; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none;';
+    document.body.appendChild(container);
+  }
+  return container;
+}
+
+async function startAmbient(){
   try{
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    masterGain = audioCtx.createGain();
-    masterGain.gain.value = 0;
-    masterGain.connect(audioCtx.destination);
-    masterGain.gain.linearRampToValueAtTime(0.16, audioCtx.currentTime + 2.5);
-
-    // 은은한 코드 패드 (C3 E3 G3 B3)
-    [130.81, 164.81, 196.00, 246.94].forEach((freq) => {
-      const osc = audioCtx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      const g = audioCtx.createGain();
-      g.gain.value = 0.045;
-      osc.connect(g);
-      g.connect(masterGain);
-      osc.start();
-    });
-
-    schedulePluck();
+    await loadYoutubeApi();
+    ensureYtContainer();
+    const videoId = BG_VIDEO_IDS[Math.floor(Math.random() * BG_VIDEO_IDS.length)];
+    if(!ytPlayer){
+      ytPlayer = new YT.Player('yt-bg-player', {
+        height: '1', width: '1', videoId,
+        playerVars: { autoplay: 1, controls: 0, loop: 1, playlist: videoId },
+        events: {
+          onReady: (e) => { e.target.setVolume(45); e.target.playVideo(); }
+        }
+      });
+    } else {
+      ytPlayer.loadVideoById(videoId);
+      ytPlayer.setVolume(45);
+    }
   }catch(e){ console.error('배경음 재생 실패', e); }
 }
 
-function schedulePluck(){
-  const delay = 2600 + Math.random()*3200;
-  const t = setTimeout(()=>{
-    playPluck();
-    if(audioCtx) schedulePluck();
-  }, delay);
-  ambientTimers.push(t);
-}
-
-function playPluck(){
-  if(!audioCtx || !masterGain) return;
-  const scale = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50]; // 5음계, C5~C6
-  const freq = scale[Math.floor(Math.random()*scale.length)];
-  const now = audioCtx.currentTime;
-  const osc = audioCtx.createOscillator();
-  osc.type = 'triangle';
-  osc.frequency.value = freq;
-  const filter = audioCtx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.value = 1800;
-  const g = audioCtx.createGain();
-  g.gain.setValueAtTime(0, now);
-  g.gain.linearRampToValueAtTime(0.13, now + 0.02);
-  g.gain.exponentialRampToValueAtTime(0.001, now + 3);
-  osc.connect(filter);
-  filter.connect(g);
-  g.connect(masterGain);
-  osc.start(now);
-  osc.stop(now + 3.1);
-}
-
 function stopAmbient(){
-  ambientTimers.forEach(t => clearTimeout(t));
-  ambientTimers = [];
-  if(masterGain && audioCtx){
-    const now = audioCtx.currentTime;
-    const ctxToClose = audioCtx;
-    masterGain.gain.cancelScheduledValues(now);
-    masterGain.gain.setValueAtTime(masterGain.gain.value, now);
-    masterGain.gain.linearRampToValueAtTime(0, now + 1.1);
-    setTimeout(()=>{ try{ ctxToClose.close(); }catch(e){} }, 1200);
+  if(ytPlayer){
+    try{ ytPlayer.pauseVideo(); }catch(e){}
   }
-  audioCtx = null;
-  masterGain = null;
 }
 
 /* ---- 기도 집중 모드 ---- */
