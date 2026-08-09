@@ -345,21 +345,64 @@
 
 <div class="app" id="app"></div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
+  onSnapshot, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCzmcte3epgkssf7GXkE5CZYLIn45M-oYQ",
+  authDomain: "prayer-9a81b.firebaseapp.com",
+  projectId: "prayer-9a81b",
+  storageBucket: "prayer-9a81b.firebasestorage.app",
+  messagingSenderId: "1029201261080",
+  appId: "1:1029201261080:web:59f7e4ee5d75d266ee896d"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const prayersCol = collection(db, "prayers");
+
+// 아래 함수들에서 window.* 로 노출해두면 onclick="..." 에서 바로 호출할 수 있어요.
+window.setTab = setTab;
+window.setFilter = setFilter;
+window.prevCard = prevCard;
+window.nextCard = nextCard;
+window.toggleDone = toggleDone;
+window.markAnsweredFlow = markAnsweredFlow;
+window.confirmAnswer = confirmAnswer;
+window.openAddModal = openAddModal;
+window.openEditModal = openEditModal;
+window.closeModal = closeModal;
+window.saveModal = saveModal;
+window.deletePrayer = deletePrayer;
+
 const CATS = ["가족","건강","사역","재정","관계","기타"];
 
 let state = {
   tab: "home",
   filter: "all",
-  prayers: [
-    { id: 1, title: "아버지 건강 회복", content: "수술 후 회복이 순조롭게 되도록, 통증이 줄어들도록", cat: "건강", createdAt: "2026.07.02", done: false },
-    { id: 2, title: "학원 여름 특강 등록 은혜", content: "새로운 학생들이 채워지고, 등록한 학생들이 잘 정착하도록", cat: "사역", createdAt: "2026.06.20", done: true, answeredAt: "2026.08.01", answerNote: "특강반 정원이 다 찼습니다. 감사합니다." },
-    { id: 3, title: "동생 취업", content: "면접 본 회사에 잘 합격하도록, 하나님의 인도하심 안에서", cat: "가족", createdAt: "2026.07.28", done: false },
-  ],
+  prayers: [],
+  loaded: false,
   playIndex: 0,
   showSeal: null, // prayer object being sealed
-  modal: null, // { mode: 'edit' | 'answer', id: number|null }
+  modal: null, // { mode: 'edit' | 'answer', id: string|null }
 };
+
+function subscribeToPrayers(){
+  const q = query(prayersCol, orderBy("createdAtSort", "desc"));
+  onSnapshot(q, (snapshot) => {
+    state.prayers = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    state.loaded = true;
+    render();
+  }, (err) => {
+    console.error("Firestore 읽기 오류:", err);
+    state.loaded = true;
+    render();
+  });
+}
 
 function render(){
   const root = document.getElementById('app');
@@ -404,12 +447,15 @@ function renderHome(){
       <div class="filter-pill ${state.filter==='done'?'active':''}" onclick="setFilter('done')">응답됨</div>
     </div>
   `;
+  if(!state.loaded){
+    return filters + `<div class="empty">불러오는 중…</div>`;
+  }
   if(list.length===0){
     return filters + `<div class="empty">아직 기록된 기도 제목이 없어요.<br>우측 아래 + 를 눌러 첫 기도 제목을 적어보세요.</div>`;
   }
   return filters + list.map(p => `
     <div class="prayer-item">
-      <div class="check ${p.done?'done':''}" onclick="toggleDone(${p.id})">${p.done?'✓':''}</div>
+      <div class="check ${p.done?'done':''}" onclick="toggleDone('${p.id}')">${p.done?'✓':''}</div>
       <div class="prayer-body">
         <div class="prayer-title ${p.done?'done':''}">${escapeHtml(p.title)}</div>
         <div class="prayer-content-preview">${escapeHtml(p.content||'')}</div>
@@ -417,7 +463,7 @@ function renderHome(){
         <div class="prayer-meta">${p.createdAt} 시작${p.done ? ' · '+p.answeredAt+' 응답' : ''}</div>
       </div>
       <div class="item-actions">
-        <button class="icon-btn" onclick="openEditModal(${p.id})" title="수정">✎</button>
+        <button class="icon-btn" onclick="openEditModal('${p.id}')" title="수정">✎</button>
       </div>
     </div>
   `).join('');
@@ -427,6 +473,9 @@ function setFilter(f){ state.filter = f; render(); }
 
 function renderAnswered(){
   const list = state.prayers.filter(p=>p.done);
+  if(!state.loaded){
+    return `<div class="empty">불러오는 중…</div>`;
+  }
   if(list.length===0){
     return `<div class="empty">아직 응답된 기도가 없어요.<br>응답되면 이곳에 감사의 기록으로 쌓여요.</div>`;
   }
@@ -445,6 +494,9 @@ function renderAnswered(){
 
 function renderPrayMode(){
   const ongoing = state.prayers.filter(p=>!p.done);
+  if(!state.loaded){
+    return `<div class="empty">불러오는 중…</div>`;
+  }
   if(ongoing.length===0){
     return `<div class="empty">지금 기도 중인 제목이 없어요.<br>목록 탭에서 기도 제목을 추가해보세요.</div>`;
   }
@@ -460,7 +512,7 @@ function renderPrayMode(){
       </div>
       <div class="pray-nav">
         <button class="nav-btn" onclick="prevCard(${ongoing.length})">‹</button>
-        <button class="btn btn-primary" onclick="markAnsweredFlow(${p.id})">응답됨으로 표시</button>
+        <button class="btn btn-primary" onclick="markAnsweredFlow('${p.id}')">응답됨으로 표시</button>
         <button class="nav-btn" onclick="nextCard(${ongoing.length})">›</button>
       </div>
     </div>
@@ -470,12 +522,13 @@ function renderPrayMode(){
 function prevCard(len){ state.playIndex = (state.playIndex-1+len)%len; render(); }
 function nextCard(len){ state.playIndex = (state.playIndex+1)%len; render(); }
 
-function toggleDone(id){
+async function toggleDone(id){
   const p = state.prayers.find(x=>x.id===id);
   if(!p) return;
   if(!p.done){ markAnsweredFlow(id); return; }
-  p.done = false; p.answeredAt = null; p.answerNote = null;
-  render();
+  try{
+    await updateDoc(doc(db, "prayers", id), { done:false, answeredAt:null, answerNote:null });
+  }catch(e){ console.error(e); alert('저장 중 오류가 발생했어요'); }
 }
 
 // 응답됨으로 표시 -> 간증/결과를 적는 모달을 먼저 띄움
@@ -484,18 +537,19 @@ function markAnsweredFlow(id){
   render();
 }
 
-function confirmAnswer(id){
+async function confirmAnswer(id){
   const p = state.prayers.find(x=>x.id===id);
   if(!p) return;
   const note = document.getElementById('m-answer-note').value.trim();
   const dateVal = document.getElementById('m-answer-date').value;
-  p.done = true;
-  p.answeredAt = dateVal ? formatDateInput(dateVal) : todayLabel();
-  p.answerNote = note;
+  const answeredAt = dateVal ? formatDateInput(dateVal) : todayLabel();
   state.modal = null;
-  state.showSeal = p;
+  state.showSeal = { ...p, answeredAt };
   render();
   setTimeout(()=>{ state.showSeal = null; render(); }, 1400);
+  try{
+    await updateDoc(doc(db, "prayers", id), { done:true, answeredAt, answerNote: note });
+  }catch(e){ console.error(e); alert('저장 중 오류가 발생했어요'); }
 }
 
 function renderSeal(){
@@ -542,7 +596,7 @@ function renderModal(){
           </div>
           <div class="btn-row">
             <button class="btn btn-ghost" onclick="closeModal()">취소</button>
-            <button class="btn btn-primary" onclick="confirmAnswer(${id})">응답 도장 찍기</button>
+            <button class="btn btn-primary" onclick="confirmAnswer('${id}')">응답 도장 찍기</button>
           </div>
         </div>
       </div>
@@ -584,43 +638,51 @@ function renderModal(){
         </div>
         ` : ''}
         <div class="btn-row">
-          ${!isNew ? `<button class="btn btn-ghost" onclick="deletePrayer(${id})" style="margin-right:auto;color:var(--rose);">삭제</button>` : ''}
+          ${!isNew ? `<button class="btn btn-ghost" onclick="deletePrayer('${id}')" style="margin-right:auto;color:var(--rose);">삭제</button>` : ''}
           <button class="btn btn-ghost" onclick="closeModal()">취소</button>
-          <button class="btn btn-primary" onclick="saveModal(${isNew ? 'null' : id})">저장</button>
+          <button class="btn btn-primary" onclick="saveModal(${isNew ? 'null' : `'${id}'`})">저장</button>
         </div>
       </div>
     </div>
   `;
 }
 
-function saveModal(id){
+async function saveModal(id){
   const title = document.getElementById('m-title').value.trim();
   if(!title){ alert('기도 제목을 입력해주세요'); return; }
   const content = document.getElementById('m-content').value.trim();
   const cat = document.getElementById('m-cat').value;
   const createdVal = document.getElementById('m-created').value;
   const createdAt = createdVal ? formatDateInput(createdVal) : todayLabel();
+  const createdAtSort = createdVal || toDateInputValue(new Date());
 
-  if(id === null){
-    state.prayers.unshift({ id: Date.now(), title, content, cat, createdAt, done:false });
-  } else {
-    const p = state.prayers.find(x=>x.id===id);
-    p.title = title; p.content = content; p.cat = cat; p.createdAt = createdAt;
-    if(p.done){
-      const answeredVal = document.getElementById('m-answered').value;
-      p.answeredAt = answeredVal ? formatDateInput(answeredVal) : p.answeredAt;
-      p.answerNote = document.getElementById('m-answernote').value.trim();
-    }
+  const p = id !== null ? state.prayers.find(x=>x.id===id) : null;
+  const update = { title, content, cat, createdAt, createdAtSort };
+  if(p && p.done){
+    const answeredVal = document.getElementById('m-answered').value;
+    update.answeredAt = answeredVal ? formatDateInput(answeredVal) : p.answeredAt;
+    update.answerNote = document.getElementById('m-answernote').value.trim();
   }
+
   state.modal = null;
   render();
+
+  try{
+    if(id === null){
+      await addDoc(prayersCol, { title, content, cat, createdAt, createdAtSort, done:false, answeredAt:null, answerNote:null });
+    } else {
+      await updateDoc(doc(db, "prayers", id), update);
+    }
+  }catch(e){ console.error(e); alert('저장 중 오류가 발생했어요'); }
 }
 
-function deletePrayer(id){
+async function deletePrayer(id){
   if(!confirm('이 기도 제목을 삭제할까요?')) return;
-  state.prayers = state.prayers.filter(x=>x.id!==id);
   state.modal = null;
   render();
+  try{
+    await deleteDoc(doc(db, "prayers", id));
+  }catch(e){ console.error(e); alert('삭제 중 오류가 발생했어요'); }
 }
 
 /* ---- 날짜 유틸 ---- */
@@ -646,6 +708,7 @@ function escapeHtml(str){
 }
 
 render();
+subscribeToPrayers();
 </script>
 </body>
 </html>
