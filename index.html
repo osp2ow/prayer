@@ -497,7 +497,7 @@ function catDot(cat){
 
 let state = {
   tab: "home",
-  filter: "all",
+  filter: "ongoing",
   prayers: [],
   loaded: false,
   playIndex: 0,
@@ -895,10 +895,9 @@ function todayLabel(){
 }
 
 function renderHome(){
-  const list = state.prayers.filter(p => state.filter==='all' ? true : state.filter==='ongoing' ? !p.done : p.done);
+  const list = state.prayers.filter(p => state.filter==='ongoing' ? !p.done : p.done);
   const filters = `
     <div class="filters">
-      <div class="filter-pill ${state.filter==='all'?'active':''}" onclick="setFilter('all')">전체</div>
       <div class="filter-pill ${state.filter==='ongoing'?'active':''}" onclick="setFilter('ongoing')">기도 중</div>
       <div class="filter-pill ${state.filter==='done'?'active':''}" onclick="setFilter('done')">응답됨</div>
     </div>
