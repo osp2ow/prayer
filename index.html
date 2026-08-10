@@ -609,7 +609,7 @@ async function prewarmYoutubePlayer(){
       height: '2', width: '2', videoId: firstId,
       playerVars: { autoplay: 0, controls: 0, loop: 1, playlist: firstId, playsinline: 1 },
       events: {
-        onReady: (e) => { ytPlayerReady = true; e.target.mute(); e.target.setVolume(0); }
+        onReady: (e) => { ytPlayerReady = true; e.target.mute(); e.target.setVolume(0); currentVol = 0; }
       }
     });
   }catch(e){ console.error('배경음 플레이어 준비 실패', e); }
@@ -618,18 +618,22 @@ async function prewarmYoutubePlayer(){
 const PRAY_VOLUME = 45;
 let ytBgStarted = false; // "기도 모드" 탭에 들어와서 음소거로 미리 재생 중인지
 let fadeInterval = null;
+let currentVol = 0; // 유튜브 플레이어에 getVolume()으로 되묻지 않고, 우리가 직접 추적하는 현재 볼륨값
+                     // (getVolume()은 postMessage 왕복 지연 때문에 방금 설정한 값을 바로 못 읽어올 때가 있어
+                     //  그 값으로 페이드를 계산하면 크레센도가 어긋나는 문제가 있었음)
 
 function fadeVolume(targetVol, durationMs, onDone){
   if(fadeInterval){ clearInterval(fadeInterval); fadeInterval = null; }
   if(!ytPlayer){ if(onDone) onDone(); return; }
-  let startVol = 0;
-  try{ startVol = ytPlayer.getVolume(); }catch(e){}
+  const startVol = currentVol;
   const steps = Math.max(1, Math.round(durationMs / 100));
   let i = 0;
   fadeInterval = setInterval(() => {
     i++;
     const vol = Math.round(startVol + (targetVol - startVol) * (i / steps));
-    try{ ytPlayer.setVolume(Math.max(0, Math.min(100, vol))); }catch(e){}
+    const clamped = Math.max(0, Math.min(100, vol));
+    try{ ytPlayer.setVolume(clamped); }catch(e){}
+    currentVol = clamped;
     if(i >= steps){
       clearInterval(fadeInterval);
       fadeInterval = null;
@@ -648,6 +652,7 @@ function ensureSilentPlayback(){
     try{
       ytPlayer.mute();
       ytPlayer.setVolume(0);
+      currentVol = 0;
       ytPlayer.loadVideoById(videoId);
       ytPlayer.playVideo();
       ytBgStarted = true;
@@ -660,6 +665,7 @@ function ensureSilentPlayback(){
 function pauseSilentPlayback(){
   if(fadeInterval){ clearInterval(fadeInterval); fadeInterval = null; }
   if(ytPlayer){ try{ ytPlayer.mute(); ytPlayer.pauseVideo(); }catch(e){} }
+  currentVol = 0;
   ytBgStarted = false;
 }
 
@@ -669,6 +675,7 @@ function startAmbient(){
   if(ytPlayer){
     try{ ytPlayer.unMute(); ytPlayer.setVolume(0); }catch(e){}
   }
+  currentVol = 0;
   fadeVolume(PRAY_VOLUME, 5000);
 }
 
@@ -676,6 +683,7 @@ function startAmbient(){
 function stopAmbient(){
   fadeVolume(0, 10000, () => {
     if(ytPlayer){ try{ ytPlayer.mute(); ytPlayer.pauseVideo(); }catch(e){} }
+    currentVol = 0;
     ytBgStarted = false;
   });
 }
