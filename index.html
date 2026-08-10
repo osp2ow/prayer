@@ -506,9 +506,10 @@ let state = {
   user: null,
   authChecked: false,
   loginError: "",
-  prayFocus: null, // { id, startedAt }
+  prayFocus: null, // { id, startedAt, mode: 'normal' | 'thanks' }
   showPrayTime: null, // 방금 기도한 시간(초) - 저장용, 팝업엔 안 씀
   showVerse: null, // 기도 마칠 때 보여줄 말씀 구절
+  afterVerseAction: null, // 말씀 카드를 닫은 뒤 이어서 할 일 (예: 응답 상세 입력 모달 열기)
 };
 
 let unsubscribePrayers = null;
@@ -676,7 +677,7 @@ function startAmbient(){
     try{ ytPlayer.unMute(); ytPlayer.setVolume(0); }catch(e){}
   }
   currentVol = 0;
-  fadeVolume(PRAY_VOLUME, 5000);
+  fadeVolume(PRAY_VOLUME, 10000);
 }
 
 // "기도를 마쳤어요" 클릭 -> 말씀을 읽는 동안 10초에 걸쳐 서서히 줄어들다 멈춤 (끝나면 다시 음소거)
@@ -756,8 +757,8 @@ const VERSES = [
   { ref: "예레미야 29:11", text: "내가 너희를 향한 계획을 아나니 평안이요 재앙이 아니니라 너희에게 미래와 희망을 주는 것이니라." },
 ];
 
-function startPrayFocus(id){
-  state.prayFocus = { id, startedAt: Date.now() };
+function startPrayFocus(id, mode){
+  state.prayFocus = { id, startedAt: Date.now(), mode: mode || 'normal' };
   render();
   startAmbient();
 }
@@ -782,6 +783,11 @@ async function endPrayFocus(){
 function closeVerse(){
   state.showVerse = null;
   state.showPrayTime = null;
+  const action = state.afterVerseAction;
+  state.afterVerseAction = null;
+  if(action && action.type === 'openAnswerModal'){
+    state.modal = { mode: 'answer', id: action.id };
+  }
   render();
 }
 
@@ -838,11 +844,15 @@ function render(){
 
 function renderPrayFocusScreen(){
   const p = state.prayers.find(x=>x.id===state.prayFocus.id);
+  const isThanks = state.prayFocus.mode === 'thanks';
+  const hint = isThanks
+    ? "이 기도에 응답해 주신 것을 떠올리며, 감사한 마음을 올려드리세요"
+    : "숨을 고르며, 이 마음을 하나님께 올려드리세요";
   return `
     <div class="focus-screen">
       <div class="focus-title">${p ? escapeHtml(p.title) : ''}</div>
       <div class="breathe-circle"></div>
-      <div class="focus-hint">숨을 고르며, 이 마음을 하나님께 올려드리세요</div>
+      <div class="focus-hint">${hint}</div>
       <button class="focus-end-btn" onclick="endPrayFocus()">기도를 마쳤어요</button>
     </div>
   `;
@@ -947,7 +957,7 @@ function renderAnswered(){
       <div class="check done">✓</div>
       <div class="prayer-body">
         <div class="prayer-title">${escapeHtml(p.title)}</div>
-        <div class="prayer-meta">${p.createdAt} → ${p.answeredAt} 응답</div>
+        <div class="prayer-meta">${p.createdAt} → ${p.answeredAt} 응답${p.totalPrayedSeconds ? ' · 총 '+formatDuration(p.totalPrayedSeconds)+' 기도' : ''}</div>
         ${p.answerNote ? `<div class="prayer-content-preview">"${escapeHtml(p.answerNote)}"</div>` : ''}
         <div class="prayer-tag">${catDot(p.cat)}${p.cat}</div>
       </div>
@@ -997,9 +1007,11 @@ async function toggleDone(id){
 }
 
 // 응답됨으로 표시 -> 간증/결과를 적는 모달을 먼저 띄움
+// 응답됨으로 표시하기 전에, 먼저 감사 기도 시간을 갖는다.
+// 기도를 마치면(말씀 카드까지 닫으면) 자동으로 응답 상세 입력 모달로 이어진다.
 function markAnsweredFlow(id){
-  state.modal = { mode: 'answer', id };
-  render();
+  state.afterVerseAction = { type: 'openAnswerModal', id };
+  startPrayFocus(id, 'thanks');
 }
 
 async function confirmAnswer(id){
