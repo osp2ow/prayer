@@ -609,14 +609,14 @@ async function prewarmYoutubePlayer(){
       height: '2', width: '2', videoId: firstId,
       playerVars: { autoplay: 0, controls: 0, loop: 1, playlist: firstId, playsinline: 1 },
       events: {
-        onReady: (e) => { ytPlayerReady = true; e.target.setVolume(0); }
+        onReady: (e) => { ytPlayerReady = true; e.target.mute(); e.target.setVolume(0); }
       }
     });
   }catch(e){ console.error('배경음 플레이어 준비 실패', e); }
 }
 
 const PRAY_VOLUME = 45;
-let ytBgStarted = false; // "기도 모드" 탭에 들어와서 볼륨 0으로 미리 재생 중인지
+let ytBgStarted = false; // "기도 모드" 탭에 들어와서 음소거로 미리 재생 중인지
 let fadeInterval = null;
 
 function fadeVolume(targetVol, durationMs, onDone){
@@ -638,15 +638,17 @@ function fadeVolume(targetVol, durationMs, onDone){
   }, 100);
 }
 
-// "기도 모드" 탭에 들어오는 순간 볼륨 0으로 재생을 미리 시작해둔다 (탭 클릭 = 사용자 동작이라 자동재생이 허용됨)
+// "기도 모드" 탭에 들어오는 순간 음소거 상태로 재생을 미리 시작해둔다 (탭 클릭 = 사용자 동작이라 자동재생이 허용됨)
+// mute()를 같이 걸어야 광고가 붙었을 때도 소리가 절대 새어나오지 않는다 (setVolume(0)만으로는 광고엔 안 먹힐 때가 있음)
 function ensureSilentPlayback(){
   if(ytBgStarted) return;
   const start = () => {
     if(!ytPlayer) return;
     const videoId = BG_VIDEO_IDS[Math.floor(Math.random() * BG_VIDEO_IDS.length)];
     try{
-      ytPlayer.loadVideoById(videoId);
+      ytPlayer.mute();
       ytPlayer.setVolume(0);
+      ytPlayer.loadVideoById(videoId);
       ytPlayer.playVideo();
       ytBgStarted = true;
     }catch(e){ console.error('배경음 사전 재생 실패', e); }
@@ -657,20 +659,23 @@ function ensureSilentPlayback(){
 
 function pauseSilentPlayback(){
   if(fadeInterval){ clearInterval(fadeInterval); fadeInterval = null; }
-  if(ytPlayer){ try{ ytPlayer.pauseVideo(); }catch(e){} }
+  if(ytPlayer){ try{ ytPlayer.mute(); ytPlayer.pauseVideo(); }catch(e){} }
   ytBgStarted = false;
 }
 
-// "기도하기" 클릭 -> 이미 볼륨 0으로 흐르고 있던 음악을 서서히 키움
+// "기도하기" 클릭 -> 음소거를 풀고, 이미 흐르고 있던 음악을 볼륨 0에서 서서히 키움
 function startAmbient(){
   ensureSilentPlayback();
+  if(ytPlayer){
+    try{ ytPlayer.unMute(); ytPlayer.setVolume(0); }catch(e){}
+  }
   fadeVolume(PRAY_VOLUME, 2500);
 }
 
-// "기도를 마쳤어요" 클릭 -> 말씀을 읽는 동안 10초에 걸쳐 서서히 줄어들다 멈춤
+// "기도를 마쳤어요" 클릭 -> 말씀을 읽는 동안 10초에 걸쳐 서서히 줄어들다 멈춤 (끝나면 다시 음소거)
 function stopAmbient(){
   fadeVolume(0, 10000, () => {
-    if(ytPlayer){ try{ ytPlayer.pauseVideo(); }catch(e){} }
+    if(ytPlayer){ try{ ytPlayer.mute(); ytPlayer.pauseVideo(); }catch(e){} }
     ytBgStarted = false;
   });
 }
