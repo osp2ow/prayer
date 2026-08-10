@@ -519,12 +519,8 @@ onAuthStateChanged(auth, (user) => {
   state.authChecked = true;
   if(user){
     subscribeToPrayers();
-    // 앱을 여는 순간부터 음소거로 미리 재생을 시작해둔다.
-    // 음소거 상태의 자동재생은 브라우저가 항상 허용해주기 때문에,
-    // 혹시 광고가 붙어 있어도 사용자가 소리를 켜기 전에 이미 조용히 지나가 있게 된다.
-    ensureSilentPlayback();
   } else {
-    pauseSilentPlayback();
+    if(!bgAudio.paused) bgAudio.pause();
     if(unsubscribePrayers){
       unsubscribePrayers();
       unsubscribePrayers = null;
@@ -569,10 +565,8 @@ function subscribeToPrayers(){
 const BG_FILES = ["bgm.mp3", "bgm2.mp3", "bgm3.mp3"];
 const bgAudio = new Audio();
 bgAudio.loop = true;
-bgAudio.muted = true;
-bgAudio.volume = 0;
 bgAudio.preload = 'auto';
-bgAudio.src = BG_FILES[Math.floor(Math.random() * BG_FILES.length)];
+bgAudio.volume = 0;
 
 const PRAY_VOLUME = 0.45; // 0~1
 let fadeInterval = null;
@@ -594,34 +588,19 @@ function fadeVolume(targetVol, durationMs, onDone){
   }, 100);
 }
 
-// 앱을 여는 순간(또는 로그인되는 순간) 음소거 상태로 미리 재생을 시작해둔다.
-// 음소거 자동재생은 브라우저가 항상 허용해주기 때문에 특별한 타이밍이 필요 없다.
-function ensureSilentPlayback(){
-  if(!bgAudio.paused) return;
-  bgAudio.muted = true;
-  bgAudio.volume = 0;
-  bgAudio.play().catch(e => console.error('배경음 사전 재생 실패', e));
-}
-
-function pauseSilentPlayback(){
-  if(fadeInterval){ clearInterval(fadeInterval); fadeInterval = null; }
-  bgAudio.pause();
-  bgAudio.muted = true;
-  bgAudio.volume = 0;
-}
-
-// "기도하기" 클릭 -> 음소거를 풀고, 이미 흐르고 있던 음악을 볼륨 0에서 10초에 걸쳐 서서히 키움
+// "기도하기" 클릭 -> 그 즉시 재생을 시작하면서 볼륨 0에서 10초에 걸쳐 서서히 키움
 function startAmbient(){
-  ensureSilentPlayback();
-  bgAudio.muted = false;
+  bgAudio.src = BG_FILES[Math.floor(Math.random() * BG_FILES.length)];
+  bgAudio.currentTime = 0;
   bgAudio.volume = 0;
+  bgAudio.play().catch(e => console.error('배경음 재생 실패', e));
   fadeVolume(PRAY_VOLUME, 10000);
 }
 
-// "기도를 마쳤어요" 클릭 -> 말씀을 읽는 동안 10초에 걸쳐 서서히 줄어들다 멈춤 (끝나면 다시 음소거, 재생은 계속 유지)
+// "기도를 마쳤어요" 클릭 -> 말씀을 읽는 동안 10초에 걸쳐 서서히 줄어들다 멈춤
 function stopAmbient(){
   fadeVolume(0, 10000, () => {
-    bgAudio.muted = true;
+    bgAudio.pause();
   });
 }
 
