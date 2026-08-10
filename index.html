@@ -519,10 +519,16 @@ onAuthStateChanged(auth, (user) => {
   state.authChecked = true;
   if(user){
     subscribeToPrayers();
-    prewarmYoutubePlayer();
-  } else if(unsubscribePrayers){
-    unsubscribePrayers();
-    unsubscribePrayers = null;
+    // 앱을 여는 순간부터 음소거로 미리 재생을 시작해둔다.
+    // 음소거 상태의 자동재생은 브라우저가 항상 허용해주기 때문에,
+    // 혹시 광고가 붙어 있어도 사용자가 소리를 켜기 전에 이미 조용히 지나가 있게 된다.
+    ensureSilentPlayback();
+  } else {
+    pauseSilentPlayback();
+    if(unsubscribePrayers){
+      unsubscribePrayers();
+      unsubscribePrayers = null;
+    }
     state.prayers = [];
     state.loaded = false;
   }
@@ -898,13 +904,9 @@ function tab(key, label){
 }
 
 function setTab(key){
-  const enteringPray = key === 'pray' && state.tab !== 'pray';
-  const leavingPrayIdle = state.tab === 'pray' && key !== 'pray' && !state.prayFocus;
   state.tab = key;
   state.playIndex = 0;
   render();
-  if(leavingPrayIdle) pauseSilentPlayback();
-  if(enteringPray) ensureSilentPlayback();
 }
 
 function todayLabel(){
