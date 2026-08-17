@@ -21,6 +21,27 @@
     --font-title: 'Gowun Dodum', 'Pretendard', sans-serif;
     --font-body: 'Pretendard', 'Noto Sans KR', sans-serif;
   }
+  body.dark{
+    --bg: #1B1E27;
+    --bg-deep: #12141B;
+    --ink: #EDEFF5;
+    --ink-soft: #A7ACC0;
+    --card: #242836;
+    --card-soft: #2C3140;
+    --line: #343A4A;
+    --gold: #D9AE5C;
+    --gold-deep: #C99A45;
+    --rose: #C98577;
+  }
+  body{ transition: background-color .3s ease; }
+  .theme-toggle{
+    background:transparent;
+    border:none;
+    cursor:pointer;
+    font-size:16px;
+    line-height:1;
+    padding:0;
+  }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
@@ -478,6 +499,7 @@ window.saveModal = saveModal;
 window.deletePrayer = deletePrayer;
 window.doLogin = doLogin;
 window.doLogout = doLogout;
+window.toggleDarkMode = toggleDarkMode;
 window.startPrayFocus = startPrayFocus;
 window.endPrayFocus = endPrayFocus;
 window.closeVerse = closeVerse;
@@ -510,7 +532,14 @@ let state = {
   showPrayTime: null, // 방금 기도한 시간(초) - 저장용, 팝업엔 안 씀
   showVerse: null, // 기도 마칠 때 보여줄 말씀 구절
   afterVerseAction: null, // 말씀 카드를 닫은 뒤 이어서 할 일 (예: 응답 상세 입력 모달 열기)
+  darkMode: (function(){ try{ return localStorage.getItem('prayerAppDark') === '1'; }catch(e){ return false; } })(),
 };
+
+function toggleDarkMode(){
+  state.darkMode = !state.darkMode;
+  try{ localStorage.setItem('prayerAppDark', state.darkMode ? '1' : '0'); }catch(e){}
+  render();
+}
 
 let unsubscribePrayers = null;
 
@@ -716,6 +745,7 @@ function formatDuration(sec){
 
 function render(){
   const root = document.getElementById('app');
+  document.body.classList.toggle('dark', state.darkMode);
 
   if(!state.authChecked){
     root.innerHTML = `<div class="empty" style="padding-top:120px;">불러오는 중…</div>`;
@@ -736,7 +766,10 @@ function render(){
     <header class="top">
       <h1>기도의 자리</h1>
       <div class="header-right">
-        <span class="date">${todayLabel()}</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="date">${todayLabel()}</span>
+          <button class="theme-toggle" onclick="toggleDarkMode()" title="${state.darkMode ? '라이트 모드' : '다크 모드'}">${state.darkMode ? '☀️' : '🌙'}</button>
+        </div>
         <button class="logout-btn" onclick="doLogout()">로그아웃</button>
       </div>
     </header>
