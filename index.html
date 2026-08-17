@@ -18,6 +18,8 @@
     --gold: #C89B3C;
     --gold-deep: #9C7526;
     --rose: #9C6558;
+    --btn-bg: #2B3244;
+    --btn-text: #F7F6F2;
     --font-title: 'Gowun Dodum', 'Pretendard', sans-serif;
     --font-body: 'Pretendard', 'Noto Sans KR', sans-serif;
   }
@@ -32,6 +34,8 @@
     --gold: #D9AE5C;
     --gold-deep: #C99A45;
     --rose: #C98577;
+    --btn-bg: #D9AE5C;
+    --btn-text: #1B1E27;
   }
   body{ transition: background-color .3s ease; }
   .theme-toggle{
@@ -77,7 +81,7 @@
     display:flex;
     flex-direction:column;
     align-items:flex-end;
-    gap:4px;
+    gap:10px;
   }
   header.top .date{
     font-size:11.5px;
@@ -163,7 +167,7 @@
     transition:transform .15s ease, box-shadow .15s ease;
   }
   .btn:active{ transform:scale(0.96); }
-  .btn-primary{ background:var(--ink); color:#F7F6F2; }
+  .btn-primary{ background:var(--btn-bg); color:var(--btn-text); }
   .btn-ghost{ background:transparent; color:var(--ink-soft); border:1px solid var(--line); }
   .btn-row{ display:flex; gap:8px; justify-content:flex-end; margin-top:6px; }
 
@@ -230,7 +234,7 @@
     cursor:pointer;
     background:var(--card);
   }
-  .filter-pill.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .filter-pill.active{ background:var(--btn-bg); color:var(--btn-text); border-color:var(--btn-bg); }
 
   .fab{
     position:fixed;
@@ -239,8 +243,8 @@
     transform:translateX(calc(-50% + 240px));
     width:48px; height:48px;
     border-radius:50%;
-    background:var(--ink);
-    color:#F7F6F2;
+    background:var(--btn-bg);
+    color:var(--btn-text);
     font-size:24px;
     border:none;
     box-shadow:0 6px 16px rgba(43,50,68,0.35);
